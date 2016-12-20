@@ -1,6 +1,18 @@
 local r = {};
 
+npcBot = GetBot();
+AssLane = npcBot:GetAssignedLane()
+abilityBA = npcBot:GetAbilityByName( "rattletrap_battery_assault" );
+abilityCog = npcBot:GetAbilityByName( "rattletrap_power_cogs" );
+abilityRF = npcBot:GetAbilityByName( "rattletrap_rocket_flare" );
+abilityHook = npcBot:GetAbilityByName( "rattletrap_hookshot" );
+
+local DistanceToLaneMarker = 0;
+local LaneAdvance = 0.4;
+local target = GetLocationAlongLane(AssLane,LaneAdvance);
+
 STATE_IDLE = "STATE_IDLE";
+STATE_LANE = "STATE_LANE";
 STATE_ATTACKING_CREEP = "STATE_ATTACKING_CREEP";
 STATE_KILL = "STATE_KILL";
 STATE_RETREAT = "STATE_RETREAT";
@@ -76,8 +88,6 @@ local function CheckHookClearance(EnemyToKill)
 	return Clear;
 end
 
-
-
 local function GetComfortPoint(creeps)
     local npcBot = GetBot();
     local mypos = npcBot:GetLocation();
@@ -110,7 +120,6 @@ local function GetComfortPoint(creeps)
 end
 
 local function ShouldRetreat()
-    local npcBot = GetBot();
     return npcBot:GetHealth()/npcBot:GetMaxHealth()
     < RetreatHPThreshold or npcBot:GetMana()/npcBot:GetMaxMana()
     < RetreatMPThreshold;
@@ -228,12 +237,13 @@ end
 
 
 function r.StateIdle(StateMachine)
-    local npcBot = GetBot();
     if(npcBot:IsAlive() == false) then
         return;
     end
-	local abilityHook = npcBot:GetAbilityByName( "rattletrap_hookshot" )
-
+    if 1==1 then
+      StateMachine.State = STATE_LANE;
+      return;
+    end
     local creeps = npcBot:GetNearbyCreeps(800,true);
     local pt = GetComfortPoint(creeps);
 
@@ -293,6 +303,30 @@ function r.StateIdle(StateMachine)
         target = GetLocationAlongLane(2,0.95);
         npcBot:Action_AttackMove(target);
     end
+
+end
+
+function r.StateLane(StateMachine)
+  local Time = DotaTime()
+  if Time < 1000 then
+    GetToLane()
+  end
+
+end
+
+function GetToLane()
+  local NearbyTowers = npcBot:GetNearbyTowers(500,false);
+
+  if(#NearbyTowers == 0) then
+      DistanceToLaneMarker = GetUnitToLocationDistance(npcBot,target);
+      --[[if DistanceToLaneMarker < 300 then
+        LaneAdvance = LaneAdvance + 0.01;
+      end]]
+
+      target = GetLocationAlongLane(AssLane,LaneAdvance);
+  end
+        npcBot:Action_MoveToLocation(target);
+  return;
 end
 
 function r.StateAttackingCreep(StateMachine)
@@ -426,10 +460,7 @@ function r.StateFighting(StateMachine)
     else
         if ( npcBot:IsUsingAbility() ) then return end;
 
-        local abilityBA = npcBot:GetAbilityByName( "rattletrap_battery_assault" );
-        local abilityCog = npcBot:GetAbilityByName( "rattletrap_power_cogs" );
-        local abilityRF = npcBot:GetAbilityByName( "rattletrap_rocket_flare" );
-        local abilityHook = npcBot:GetAbilityByName( "rattletrap_hookshot" );
+
 		local HookLevel = abilityHook:GetLevel();
 		local HookSpeed = 4000;
 
@@ -492,13 +523,16 @@ end
 
 -- useless now ignore it
 function r.StateFarming(StateMachine)
-    local npcBot = GetBot();
     if(npcBot:IsAlive() == false) then
         StateMachine.State = STATE_IDLE;
         return;
     end
 end
 
+function ReturnDesires()
 
+
+
+end
 
 return r;
