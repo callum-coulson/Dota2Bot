@@ -42,6 +42,7 @@ local done = 0;
 StateMachine = {};
 StateMachine["State"] = STATE_IDLE;
 StateMachine[STATE_IDLE] = state_desires.StateIdle;
+StateMachine[STATE_LANE] = state_desires.StateLane;
 StateMachine[STATE_ATTACKING_CREEP] = state_desires.StateAttackingCreep;
 StateMachine[STATE_RETREAT] = state_desires.StateRetreat;
 StateMachine[STATE_GOTO_COMFORT_POINT] = state_desires.StateGotoComfortPoint;
