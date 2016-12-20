@@ -6,9 +6,9 @@ abilityBA = npcBot:GetAbilityByName( "rattletrap_battery_assault" );
 abilityCog = npcBot:GetAbilityByName( "rattletrap_power_cogs" );
 abilityRF = npcBot:GetAbilityByName( "rattletrap_rocket_flare" );
 abilityHook = npcBot:GetAbilityByName( "rattletrap_hookshot" );
-
+Arrived = false;
 local DistanceToLaneMarker = 0;
-local LaneAdvance = 0.4;
+local LaneAdvance = 0.35;
 local target = GetLocationAlongLane(AssLane,LaneAdvance);
 
 STATE_IDLE = "STATE_IDLE";
@@ -307,28 +307,66 @@ function r.StateIdle(StateMachine)
 end
 
 function r.StateLane(StateMachine)
+  if(npcBot:IsAlive() == false) then
+      StateMachine.State = STATE_IDLE;
+      return;
+  end
   local Time = DotaTime()
-  if Time < 1000 then
+  local creeps = npcBot:GetNearbyCreeps(800,true);
+  local friend_creeps = npcBot:GetNearbyCreeps(500,false);
+  if Time < 0 or  then
     GetToLane()
   end
+  if #friend_creeps > 0 and #creeps==0 then
+      FollowCreepsIn(friend_creeps)
+  end
 
 end
-
+------lANING FUNCTIONS------
 function GetToLane()
-  local NearbyTowers = npcBot:GetNearbyTowers(500,false);
+  print("I'M GOING TO LANE");
+  local NearbyTowers = npcBot:GetNearbyTowers(900,false);
 
-  if(#NearbyTowers == 0) then
+      print(DistanceToLaneMarker)
       DistanceToLaneMarker = GetUnitToLocationDistance(npcBot,target);
-      --[[if DistanceToLaneMarker < 300 then
-        LaneAdvance = LaneAdvance + 0.01;
-      end]]
+
+
+      if Arrived == false and GetUnitToLocationDistance(npcBot,GetLocationAlongLane(AssLane,0.35)) < 300 then
+        Arrived = true;
+      end
+
+      if DistanceToLaneMarker < 300 and #NearbyTowers == 0 then
+        LaneAdvance = LaneAdvance +0.01
+      end
 
       target = GetLocationAlongLane(AssLane,LaneAdvance);
-  end
-        npcBot:Action_MoveToLocation(target);
-  return;
+      if Arrived == true and #NearbyTowers > 0 then
+        for k,v in pairs(NearbyTowers) do
+          target = v:GetLocation();
+        end
+      end
+
+  npcBot:Action_MoveToLocation(target);
+  return true;
 end
 
+function FollowCreepsIn(friend_creeps)
+  for k,fcreep in pairs(friend_creeps) do
+    if fcreeppos == nil then
+        fcreeppos = fcreep:GetLocation();
+    else
+      fcreeppos = fcreeppos + fcreep:GetLocation();
+    end
+  end
+  AveragePos = (fcreeppos / #friend_creeps);
+  print ("AVG:",AveragePos);
+
+  DebugDrawCircle(AveragePos, 50, 255, 255, 255 );
+  fcreeppos = nil;
+  npcBot:Action_MoveToLocation(AveragePos);
+  return true;
+end
+----------------------------
 function r.StateAttackingCreep(StateMachine)
     local npcBot = GetBot();
     if(npcBot:IsAlive() == false) then
@@ -336,8 +374,7 @@ function r.StateAttackingCreep(StateMachine)
         return;
     end
 
-    local creeps = npcBot:GetNearbyCreeps(800,true);
-	local friend_creeps = npcBot:GetNearbyCreeps(300,false);
+
 	local fcreeps = #friend_creeps;
 	local ecreeps = #creeps;
     local pt = GetComfortPoint(creeps);

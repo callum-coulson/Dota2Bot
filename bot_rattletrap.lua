@@ -38,6 +38,7 @@ end
 
 PrevState = "none";
 local done = 0;
+local TPcount = 1;
 
 StateMachine = {};
 StateMachine["State"] = STATE_IDLE;
@@ -52,17 +53,17 @@ function Think()
     local npcBot = GetBot();
     local ItemPurchase = require(GetScriptDirectory().."/rattletrap/item_purchase_rattletrap");
 
-	   MyTeam = GetTeam();
-    --print(GetLocationAlongLane(2,0.9));
+	  MyTeam = GetTeam();
     ThinkLvlupAbility();
-
     StateMachine[StateMachine.State](StateMachine);
     if(PrevState ~= StateMachine.State) then
         print("STATE: "..StateMachine.State);
         PrevState = StateMachine.State;
     end
 	CheckEnemyHeroes();
+
   ItemPurchase.ItemPurchaseThink(true);
+  --BuyTPScroll(npcBot,count);
 end
 
 totalLevelOfAbilities = 0;
@@ -103,6 +104,32 @@ function IsItemAvailable(item_name)
     return nil;
 end
 
+function BuyTPScroll(npcBot, TPcount)
+	TPcount = TPcount or 1;
+	local iScrollCount = 0;
+
+	for i=1,9 do
+		local sCurItem = npcBot:GetItemInSlot( i );
+		if ( sCurItem ~= nil ) then
+			local iName = sCurItem:GetName();
+			if ( iName == "item_tpscroll" ) then
+				iScrollCount = iScrollCount + 1;
+			elseif ( iName == "item_travel_boots_1" or iName == "item_travel_boots_2" ) then
+				return; --we are done, no need to check further
+			end
+		end
+	end
+
+	-- If we are at the sideshop or fountain with no TPs, then buy up to count
+	if ( (npcBot:DistanceFromSideShop() == 0 or npcBot:DistanceFromFountain() == 0) and iScrollCount < count ) then
+		for i=1,(count-iScrollCount) do
+			if ( npcBot:GetGold() >= GetItemCost( "item_tpscroll" ) ) then
+				npcBot:Action_PurchaseItem( "item_tpscroll" );
+				iScrollCount = iScrollCount + 1;
+			end
+		end
+	end
+end
 
 function CheckEnemyHeroes()
     local npcBot = GetBot();

@@ -122,8 +122,8 @@ function Think()
 			selection = heroArray[selectionNum];
 			if num == 1 then
 				SelectHero( num, "npc_dota_hero_rattletrap");
-			elseif num == 6 then
-				SelectHero( num, "npc_dota_hero_rattletrap");
+			--[[elseif num == 6 then
+				SelectHero( num, "npc_dota_hero_rattletrap");]]
 			else
 				--SelectHero( num, selection);
 				--SelectHero( num, "npc_dota_hero_rattletrap");
