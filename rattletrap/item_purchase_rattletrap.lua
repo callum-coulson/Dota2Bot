@@ -1,6 +1,4 @@
-function ItemPurchaseThink()
-
-local tableItemsToBuy = { 
+tableItemsToBuy = {
 				"item_tango",
 				"item_tango",
 				"item_clarity",
@@ -26,7 +24,10 @@ local tableItemsToBuy = {
 				"item_void_stone",
 				"item_recipe_cyclone",
 				"item_cyclone",
-			};
+};
+local r = {}
+function r.ItemPurchaseThink()
+
 	local npcBot = GetBot();
 
 	if ( #tableItemsToBuy == 0 )
@@ -43,8 +44,8 @@ local tableItemsToBuy = {
 	then
 		npcBot:Action_PurchaseItem( sNextItem );
 		table.remove( tableItemsToBuy, 1 );
+		return
 	end
-	return sNextItem
 end
-
+return r;
 ----------------------------------------------------------------------------------------------------

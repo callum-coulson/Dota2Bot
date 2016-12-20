@@ -1,13 +1,12 @@
 --[[
     StateMachine is a table
-    the key "STATE" stores the STATE of Lina 
-    other key value pairs: key is the string of state value is the function of the State. 
+    the key "STATE" stores the STATE of Lina
+    other key value pairs: key is the string of state value is the function of the State.
     each frame DOTA2 will call Think()
     Then Think() will call the function of current state.
 ]]
 
 ValveAbilityUse = require(GetScriptDirectory().."/rattletrap/ability_item_usage_rattletrap");
-ValveItemPurchase = require(GetScriptDirectory().."/rattletrap/item_purchase_rattletrap" );
 
 STATE_IDLE = "STATE_IDLE";
 STATE_ATTACKING_CREEP = "STATE_ATTACKING_CREEP";
@@ -22,6 +21,7 @@ RetreatHPThreshold = 0.3;
 RetreatMPThreshold = 0.2;
 
 STATE = STATE_IDLE;
+
 
 
 
@@ -75,7 +75,7 @@ function StateIdle(StateMachine)
         return;
     elseif(#creeps > 0 and pt ~= nil) then
         local mypos = npcBot:GetLocation();
-        
+
         local d = GetUnitToLocationDistance(npcBot,pt);
         if(d > 200) then
             StateMachine.State = STATE_GOTO_COMFORT_POINT;
@@ -93,7 +93,7 @@ function StateIdle(StateMachine)
         target = GetLocationAlongLane(2,0.95);
         npcBot:Action_AttackMove(target);
     end
-    
+
 
 end
 
@@ -195,7 +195,7 @@ function StateGotoComfortPoint(StateMachine)
         return;
     elseif(#creeps > 0 and pt ~= nil) then
         local mypos = npcBot:GetLocation();
-        
+
         local d = GetUnitToLocationDistance(npcBot,pt);
         if(d > 200 and ecreeps > 1 and fcreeps <2) then
             --print("mypos "..mypos[1]..mypos[2]);
@@ -214,14 +214,14 @@ end
 
 function StateFighting(StateMachine)
     local npcBot = GetBot();
-	
+
     if(npcBot:IsAlive() == false) then
         StateMachine.State = STATE_IDLE;
         return;
     end
 
     if(not EnemyToKill:CanBeSeen() or not EnemyToKill:IsAlive()) then
-        -- lost enemy 
+        -- lost enemy
         print("lost enemy");
         StateMachine.State = STATE_IDLE;
         return;
@@ -234,53 +234,53 @@ function StateFighting(StateMachine)
         local abilityHook = npcBot:GetAbilityByName( "rattletrap_hookshot" );
 		local HookLevel = abilityHook:GetLevel();
 		local HookSpeed = 4000;
-		
+
 		if HookLevel == 2 then
 		HookSpeed = 5000;
 		elseif HookLevel == 3 then
 		HookSpeed = 6000;
 		end
-		
+
 		local TimeForHook =(GetUnitToLocationDistance(npcBot, (((EnemyToKill:GetExtrapolatedLocation(1)) + EnemyToKill:GetLocation()))))/HookSpeed;
         local castBADesire, castBATarget = 0,EnemyToKill;
         local castCogDesire, castCogTarget = 0,EnemyToKill;
         local castRFDesire, castRFLocation = 0,EnemyToKill:GetLocation();
         local castHookDesire, castHookLocation = 0,EnemyToKill:GetLocation();
 
-		
+
 		if GetUnitToUnitDistance(npcBot,EnemyToKill) > 500  and abilityHook:IsFullyCastable()
         then
-			
+
 			if(CheckHookClearance(EnemyToKill) == 0) then
 				LastEnemyToBeAttacked = nil;
 				npcBot:Action_UseAbilityOnLocation( abilityHook, EnemyToKill:GetLocation()+(EnemyToKill:GetExtrapolatedLocation(1)*TimeForHook));
 				return;
 			end
         end
-		
+
 		if GetUnitToUnitDistance(npcBot,EnemyToKill) < 200 and abilityCog:IsFullyCastable()
         then
             LastEnemyToBeAttacked = nil;
 			npcBot:Action_MoveToLocation(EnemyToKill:GetLocation());
 				npcBot:Action_UseAbility( abilityCog );
-		
+
             return;
         end
-	
-		if  GetUnitToUnitDistance(npcBot,EnemyToKill) < 200 and abilityCog:GetCooldownTimeRemaining() > 0 and abilityBA:IsFullyCastable() then 
+
+		if  GetUnitToUnitDistance(npcBot,EnemyToKill) < 200 and abilityCog:GetCooldownTimeRemaining() > 0 and abilityBA:IsFullyCastable() then
 		    LastEnemyToBeAttacked = nil;
 			npcBot:Action_UseAbility( abilityBA );
 			return
-		end		
+		end
 
-        if ( castRFDesire > 0 ) 
+        if ( castRFDesire > 0 )
         then
             LastEnemyToBeAttacked = nil;
             npcBot:Action_UseAbilityOnLocation( abilityRF, castRFLocation );
 			castRFDesire = 0;
             return;
         end
-		
+
 
 
         --print("desires: " .. castLBDesire .. " " .. castLSADesire .. " " .. castDSDesire);
@@ -309,7 +309,6 @@ StateMachine[STATE_RETREAT] = StateRetreat;
 StateMachine[STATE_GOTO_COMFORT_POINT] = StateGotoComfortPoint;
 StateMachine[STATE_FIGHTING] = StateFighting;
 
-
 AbilityPriority = {
 	"rattletrap_hookshot",
 	"rattletrap_battery_assault",
@@ -337,23 +336,23 @@ function ThinkLvlupAbility()
 end
 
 PrevState = "none";
-local done = 0; 
-function Think(  )
-	print(ItemPurchase);
-    -- Think this item( ... )
-    --update
+local done = 0;
+
+function Think()
     local npcBot = GetBot();
-	MyTeam = GetTeam();
+    local ItemPurchase = require(GetScriptDirectory().."/rattletrap/item_purchase_rattletrap");
+
+	   MyTeam = GetTeam();
     --print(GetLocationAlongLane(2,0.9));
     ThinkLvlupAbility();
-	ItemPurchase.ItemPurchaseThink();
+
     StateMachine[StateMachine.State](StateMachine);
     if(PrevState ~= StateMachine.State) then
         print("STATE: "..StateMachine.State);
         PrevState = StateMachine.State;
     end
 	CheckEnemyHeroes();
-	
+  ItemPurchase.ItemPurchaseThink(true);
 end
 
 function ConsiderRFCreeps(creeps)
@@ -365,20 +364,20 @@ function ConsiderRFCreeps(creeps)
         local abilityRF = npcBot:GetAbilityByName("rattletrap_rocket_flare");
 		local mylocal = npcBot:GetLocation();
         local castRFDesire, castRFLocation = 0,creep_pos;
-		
+
 		local lowCreeps = 0;
 		local done_creep = 0
 		local RFdamage = abilityRF:GetAbilityDamage();
 		for creep_k,creep in pairs(creeps)
-		do 
+		do
 			local creep_name = creep:GetUnitName();
 			if(creep:IsAlive()) then
 				 local creep_hp = creep:GetHealth();
 				 if(RFdamage > creep_hp) then
-					castRFLocation = creep:GetLocation(); 
+					castRFLocation = creep:GetLocation();
 					checkOtherCreeps = creep:GetNearbyCreeps(500,true);
 					lowCreeps = lowCreeps + 1;
-					
+
 				 end
 			 end
 		end
@@ -386,7 +385,7 @@ function ConsiderRFCreeps(creeps)
 			castRFDesire = 1;
 		end
 
-        if ( castRFDesire > 0 ) 
+        if ( castRFDesire > 0 )
         then
             LastEnemyToBeAttacked = nil;
             npcBot:Action_UseAbilityOnLocation( abilityRF, castRFLocation );
@@ -399,7 +398,7 @@ function ConsiderAttackCreeps(creeps)
     -- there are creeps try to attack them --
     --print("ConsiderAttackCreeps");
     local npcBot = GetBot();
-	
+
 			local far_creeps = npcBot:GetNearbyCreeps(1500,true)
 			ConsiderRFCreeps(far_creeps);
 
@@ -411,7 +410,7 @@ function ConsiderAttackCreeps(creeps)
     local weakest_creep = nil;
 	rightClick = 1;
     for creep_k,creep in pairs(creeps)
-    do 
+    do
 
 
 		local creep_name = creep:GetUnitName();
@@ -432,7 +431,7 @@ function ConsiderAttackCreeps(creeps)
     end
 
     if(weakest_creep ~= nil) then
-	
+
 		local rightClick = npcBot:GetEstimatedDamageToTarget( true, weakest_creep, 1.0, DAMAGE_TYPE_PHYSICAL );
 
 
@@ -448,7 +447,7 @@ function ConsiderAttackCreeps(creeps)
             return;
         end
         weakest_creep = nil;
-        
+
     end
 
     -- nothing to do , try to attack heros
@@ -463,7 +462,7 @@ function ConsiderAttackCreeps(creeps)
             end
         end
     end
-    
+
 end
 
 function GetComfortPoint(creeps)
@@ -489,7 +488,7 @@ function GetComfortPoint(creeps)
     local avg_pos_y = y_pos_sum / count;
 
     if(count > 0) then
-        -- I assume ComfortPoint is 600 from the avg point 
+        -- I assume ComfortPoint is 600 from the avg point
         --print("avg_pos : " .. avg_pos_x .. " , " .. avg_pos_y);
         return Vector(avg_pos_x - 500 / 1.414,avg_pos_y - 500 / 1.414);
     else
@@ -511,7 +510,7 @@ function CheckHookClearance(EnemyToKill)
 	local ECreeps = npcBot:GetNearbyCreeps(800,true);
 	local FHeroes = npcBot:GetNearbyHeroes(800,false,0);
 	local Clear = 0
-	
+
 	function JoinBlockTargets(FCreeps, ECreeps,FHeroes)
 		for k,v in ipairs(ECreeps) do
 		table.insert(FCreeps, v)
@@ -521,39 +520,39 @@ function CheckHookClearance(EnemyToKill)
 	end
 	JoinBlockTargets(FCreeps,ECreeps,FHeroes);
 	for creep_k,creep in pairs(FCreeps)
-		do 	
+		do
 
 			Creep_Pos = creep:GetLocation()
 			--Get Distance from Bot-Foe
 			AB = GetUnitToLocationDistance(npcBot,EnemyPos);
-			
+
 			--Get Distance from Bot-Creep
 			AC = GetUnitToLocationDistance(npcBot,Creep_Pos);
-			
+
 			--Get Distance from Foe-Creep
 			BC = GetUnitToLocationDistance(EnemyToKill,Creep_Pos);
-			
+
 			--get d [https://en.wikipedia.org/wiki/Heron's_formula]
 			ABC = (AB + AC + BC)/2;
-			
+
 			--Do Upper portion of Herron's equation
 			Heron_upper = 4*ABC*((ABC-AB)*(ABC-AC)*(ABC-BC));
-			
+
 			--Do rest of Herons
 			Herons = Heron_upper/((AB)*(AB));
 			HeronsSRT = math.sqrt(Herons);
-			
+
 			print("Herons: ",HeronsSRT);
-			
+
 			--check it its out of the way and if it's behind cancel that
 			if HeronsSRT < 200  then
 				Clear = Clear+1
 				if BC > AB and AC < BC then
 					Clear = Clear-1
 				end
-				
+
 			end
-			
+
 	end
 	print ("Clear: ",Clear);
 	return Clear;
@@ -604,45 +603,44 @@ function CheckEnemyHeroes()
 	local CanSee = nil;
 	local Predicted_Damage = nil;
 	Hero = nil;
-	
+
 	if MyTeam == 2 then
 		their_team = 3;
 	elseif MyTeam == 3 then
 		their_team = 2;
 	end
-	for i = 1, 5 do 
+	for i = 1, 5 do
 		Hero = GetTeamMember( their_team, i )
 		CanSee = Hero:CanBeSeen();
 		--print(CanSee);
-		
+
 		EnemyHP = Hero:GetHealth();
 		--print(EnemyHP);
 
 		TimeForRocket =(GetUnitToLocationDistance(npcBot, (((Hero:GetExtrapolatedLocation(1)) + Hero:GetLocation()))))/1750;
 
 		--print (TimeForRocket);
-	
+
 		Predicted_Damage = Hero:GetActualDamage(abilityRF:GetAbilityDamage(),abilityRF:GetDamageType())
 		--print("Damage: ",Predicted_Damage)
-		
+
 		if EnemyHP < Predicted_Damage and abilityRF:IsFullyCastable() and EnemyHP > 0 then
 			npcBot:Action_UseAbilityOnLocation( abilityRF, ((Hero:GetExtrapolatedLocation(1))*TimeForRocket + Hero:GetLocation()));
 		end
-		
-		
-		
+
+
+
 		if CanSee == true then
 			DebugDrawCircle(((Hero:GetExtrapolatedLocation(1))*TimeForRocket + Hero:GetLocation()), 50, 255, 255, 255 );
-		end 
+		end
 	end
-	
+
 	return;
 end
 
 function ShouldRetreat()
     local npcBot = GetBot();
-    return npcBot:GetHealth()/npcBot:GetMaxHealth() 
-    < RetreatHPThreshold or npcBot:GetMana()/npcBot:GetMaxMana() 
+    return npcBot:GetHealth()/npcBot:GetMaxHealth()
+    < RetreatHPThreshold or npcBot:GetMana()/npcBot:GetMaxMana()
     < RetreatMPThreshold;
 end
-
