@@ -7,6 +7,8 @@ abilityCog = npcBot:GetAbilityByName( "rattletrap_power_cogs" );
 abilityRF = npcBot:GetAbilityByName( "rattletrap_rocket_flare" );
 abilityHook = npcBot:GetAbilityByName( "rattletrap_hookshot" );
 Arrived = false;
+OnTheMove = false;
+
 local DistanceToLaneMarker = 0;
 local LaneAdvance = 0.35;
 local target = GetLocationAlongLane(AssLane,LaneAdvance);
@@ -165,34 +167,15 @@ end
 
 local function ConsiderAttackCreeps(creeps)
     -- there are creeps try to attack them --
-    --print("ConsiderAttackCreeps");
-    local npcBot = GetBot();
-
-			local far_creeps = npcBot:GetNearbyCreeps(1500,true)
-			ConsiderRFCreeps(far_creeps);
-
-    -- Check if we're already using an ability
-
-    --If we dont cast ability, just try to last hit.
-
     local lowest_hp = 100000;
     local weakest_creep = nil;
-	rightClick = 1;
     for creep_k,creep in pairs(creeps)
     do
-
-
 		local creep_name = creep:GetUnitName();
-        -- "bad" means "dire" and "good" means "radian"
         local badpos = string.find( creep_name,"bad");
-        if(creep:IsAlive() == false) then
-            print("dead creep");
-        end
         if(badpos ~= nil and creep:IsAlive()) then
-
              local creep_hp = creep:GetHealth();
              if(lowest_hp > creep_hp) then
-
                  lowest_hp = creep_hp;
                  weakest_creep = creep;
              end
@@ -202,25 +185,21 @@ local function ConsiderAttackCreeps(creeps)
     if(weakest_creep ~= nil) then
 
 		local rightClick = npcBot:GetEstimatedDamageToTarget( true, weakest_creep, 1.0, DAMAGE_TYPE_PHYSICAL );
-
-
-        -- if creep's hp is lower than 70(because I don't Know how much is my damadge!!), try to last hit it.
-		creep_pos = weakest_creep:GetLocation();
-		if(Attacking_creep ~= weakest_creep and lowest_hp < (rightClick*2)) then
-		npcBot:Action_MoveToLocation(creep_pos)
-		end
+				if(Attacking_creep ~= weakest_creep and lowest_hp < (rightClick*2)) then
+					local weakest_creep_pos = weakest_creep:GetLocation();
+					npcBot:Action_MoveToLocation(weakest_creep_pos)
+				end
         if(Attacking_creep ~= weakest_creep and lowest_hp < (rightClick)) then
             Attacking_creep = weakest_creep;
             npcBot:Action_AttackUnit(Attacking_creep,true);
-            StateMachine.State = STATE_ATTACKING_CREEP;
+            --StateMachine.State = STATE_ATTACKING_CREEP;
             return;
         end
         weakest_creep = nil;
-
     end
 
     -- nothing to do , try to attack heros
-
+		--[[
     local NearbyEnemyHeroes = npcBot:GetNearbyHeroes( 1000, true, BOT_MODE_NONE );
     if(NearbyEnemyHeroes ~= nil) then
         for _,npcEnemy in pairs( NearbyEnemyHeroes )
@@ -230,7 +209,7 @@ local function ConsiderAttackCreeps(creeps)
                 return;
             end
         end
-    end
+    end]]
 end
 
 
@@ -238,6 +217,7 @@ end
 
 function r.StateIdle(StateMachine)
     if(npcBot:IsAlive() == false) then
+				Arrived = false;
         return;
     end
     if 1==1 then
@@ -314,18 +294,29 @@ function r.StateLane(StateMachine)
   local Time = DotaTime()
   local creeps = npcBot:GetNearbyCreeps(800,true);
   local friend_creeps = npcBot:GetNearbyCreeps(500,false);
-  if Time < 0 or  then
+  if Time < 0 or Arrived == false then
     GetToLane()
   end
+
   if #friend_creeps > 0 and #creeps==0 then
+			print("FollowCreepsIn")
       FollowCreepsIn(friend_creeps)
+		elseif #friend_creeps > 0 and #creeps>0 then
+			print("ConsiderAttackCreeps")
+			ConsiderAttackCreeps(creeps);
+		elseif #friend_creeps == 0 and #creeps>0 then
+			print("RetreatFromCreeps")
+			RetreatFromCreeps();
+		elseif #friend_creeps == 0 and #creeps == 0 then
+			print("MoveUpLane")
+			MoveUpLane();
   end
 
 end
 ------lANING FUNCTIONS------
 function GetToLane()
   print("I'M GOING TO LANE");
-  local NearbyTowers = npcBot:GetNearbyTowers(900,false);
+	local NearbyTowers = npcBot:GetNearbyTowers(900,false);
 
       print(DistanceToLaneMarker)
       DistanceToLaneMarker = GetUnitToLocationDistance(npcBot,target);
@@ -342,6 +333,7 @@ function GetToLane()
       target = GetLocationAlongLane(AssLane,LaneAdvance);
       if Arrived == true and #NearbyTowers > 0 then
         for k,v in pairs(NearbyTowers) do
+					print();
           target = v:GetLocation();
         end
       end
@@ -359,13 +351,47 @@ function FollowCreepsIn(friend_creeps)
     end
   end
   AveragePos = (fcreeppos / #friend_creeps);
-  print ("AVG:",AveragePos);
-
-  DebugDrawCircle(AveragePos, 50, 255, 255, 255 );
   fcreeppos = nil;
   npcBot:Action_MoveToLocation(AveragePos);
   return true;
 end
+
+function RetreatFromCreeps()
+	local RetreatBackPos = GetLocationAlongLane(AssLane,LaneAdvance)
+
+	if OnTheMove == false then
+		LaneAdvance = LaneAdvance - 0.01;
+		npcBot:Action_MoveToLocation(RetreatBackPos);
+		OnTheMove = true;
+	end
+	if GetUnitToLocationDistance(npcBot,RetreatBackPos) < 200 then
+		OnTheMove = false;
+	end
+end
+
+
+function MoveUpLane()
+	--local NearbyTowers = npcBot:GetNearbyTowers(900,false);
+	--local TowerName = nil;
+	local AdvanceForwardPos = GetLocationAlongLane(AssLane,LaneAdvance)
+	--[[
+	if Arrived == true and #NearbyTowers > 0 then
+		for k,v in pairs(NearbyTowers) do
+			TowerName = v:GetUnitName()
+		end
+	end]]
+
+	if --[[TowerName ~= nil and]] OnTheMove == false then
+		LaneAdvance = LaneAdvance + 0.01;
+		npcBot:Action_MoveToLocation(AdvanceForwardPos);
+		OnTheMove = true;
+	end
+	if GetUnitToLocationDistance(npcBot,AdvanceForwardPos) < 200 then
+		OnTheMove = false;
+	end
+end
+
+
 ----------------------------
 function r.StateAttackingCreep(StateMachine)
     local npcBot = GetBot();
