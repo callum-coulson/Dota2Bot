@@ -8,6 +8,8 @@ abilityRF = npcBot:GetAbilityByName( "rattletrap_rocket_flare" );
 abilityHook = npcBot:GetAbilityByName( "rattletrap_hookshot" );
 Arrived = false;
 OnTheMove = false;
+CHealth = npcBot:GetHealth()
+Ouch = 0;
 
 local DistanceToLaneMarker = 0;
 local LaneAdvance = 0.35;
@@ -292,25 +294,40 @@ function r.StateLane(StateMachine)
       return;
   end
   local Time = DotaTime()
-  local creeps = npcBot:GetNearbyCreeps(800,true);
+  local creeps = npcBot:GetNearbyCreeps(500,true);
   local friend_creeps = npcBot:GetNearbyCreeps(500,false);
-  if Time < 0 or Arrived == false then
-    GetToLane()
-  end
 
-  if #friend_creeps > 0 and #creeps==0 then
-			print("FollowCreepsIn")
-      FollowCreepsIn(friend_creeps)
-		elseif #friend_creeps > 0 and #creeps>0 then
-			print("ConsiderAttackCreeps")
-			ConsiderAttackCreeps(creeps);
-		elseif #friend_creeps == 0 and #creeps>0 then
+	if npcBot:TimeSinceDamagedByAnyHero() < 1 then
+		Ouch = 1;
+		TakenHeroDamage()
+	elseif CHealth > npcBot:GetHealth() then
+		Ouch = 1;
+		TakenCreepDamage()
+		CHealth = npcBot:GetHealth();
+	end
+
+	if Ouch < 0 then
+		if Time < 0 or Arrived == false then
+			GetToLane()
+		elseif #friend_creeps < 2 and #creeps > 0 then
 			print("RetreatFromCreeps")
 			RetreatFromCreeps();
+		elseif #friend_creeps > 0 and #creeps > 0 then
+			print("ConsiderAttackCreeps")
+			ConsiderAttackCreeps(creeps);
+	  elseif #friend_creeps > 0 and #creeps == 0 then
+			print("FollowCreepsIn")
+	    FollowCreepsIn(friend_creeps)
 		elseif #friend_creeps == 0 and #creeps == 0 then
 			print("MoveUpLane")
 			MoveUpLane();
-  end
+		else
+			print("I'M CONFUSED WHAT TO DO");
+	  end
+	else
+		print("Ouch! - ",Ouch)
+		Ouch = Ouch - 0.05;
+	end
 
 end
 ------lANING FUNCTIONS------
@@ -358,17 +375,19 @@ end
 
 function RetreatFromCreeps()
 	local RetreatBackPos = GetLocationAlongLane(AssLane,LaneAdvance)
+	print(OnTheMove)
+	print(GetUnitToLocationDistance(npcBot,RetreatBackPos))
 
 	if OnTheMove == false then
 		LaneAdvance = LaneAdvance - 0.01;
-		npcBot:Action_MoveToLocation(RetreatBackPos);
 		OnTheMove = true;
 	end
+	npcBot:Action_MoveToLocation(RetreatBackPos);
+
 	if GetUnitToLocationDistance(npcBot,RetreatBackPos) < 200 then
 		OnTheMove = false;
 	end
 end
-
 
 function MoveUpLane()
 	--local NearbyTowers = npcBot:GetNearbyTowers(900,false);
@@ -383,14 +402,26 @@ function MoveUpLane()
 
 	if --[[TowerName ~= nil and]] OnTheMove == false then
 		LaneAdvance = LaneAdvance + 0.01;
-		npcBot:Action_MoveToLocation(AdvanceForwardPos);
+
 		OnTheMove = true;
 	end
 	if GetUnitToLocationDistance(npcBot,AdvanceForwardPos) < 200 then
 		OnTheMove = false;
 	end
+	npcBot:Action_MoveToLocation(AdvanceForwardPos);
 end
 
+function TakenCreepDamage()
+	local RetreatPos = GetLocationAlongLane(AssLane,0)
+	npcBot:Action_MoveToLocation(RetreatPos);
+
+end
+
+function TakenHeroDamage()
+	local RetreatPos = GetLocationAlongLane(AssLane,0)
+	npcBot:Action_MoveToLocation(RetreatPos);
+
+end
 
 ----------------------------
 function r.StateAttackingCreep(StateMachine)
