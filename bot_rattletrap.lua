@@ -48,19 +48,18 @@ StateMachine[STATE_ATTACKING_CREEP] = state_desires.StateAttackingCreep;
 StateMachine[STATE_RETREAT] = state_desires.StateRetreat;
 StateMachine[STATE_GOTO_COMFORT_POINT] = state_desires.StateGotoComfortPoint;
 StateMachine[STATE_FIGHTING] = state_desires.StateFighting;
+MyTeam = GetTeam();
 
 function Think()
     local npcBot = GetBot();
     local ItemPurchase = require(GetScriptDirectory().."/rattletrap/item_purchase_rattletrap");
-
-	  MyTeam = GetTeam();
     ThinkLvlupAbility();
     StateMachine[StateMachine.State](StateMachine);
     if(PrevState ~= StateMachine.State) then
         print("STATE: "..StateMachine.State);
         PrevState = StateMachine.State;
     end
-	CheckEnemyHeroes();
+		CheckEnemyHeroes();
 
   ItemPurchase.ItemPurchaseThink(true);
   --BuyTPScroll(npcBot,count);
@@ -148,7 +147,10 @@ function CheckEnemyHeroes()
 	for i = 1, 5 do
 		Hero = GetTeamMember( their_team, i )
 		CanSee = Hero:CanBeSeen();
-		--print(CanSee);
+		--print(CanSee);#
+		--[[if CanSee == true then
+			Extrap{i} = Hero:GetExtrapolatedLocation(1)
+		end]]
 
 		EnemyHP = Hero:GetHealth();
 		--print(EnemyHP);
@@ -166,7 +168,11 @@ function CheckEnemyHeroes()
 
 
 
-		if CanSee == true then
+		if CanSee == false then
+			--DebugDrawCircle(Hero:GetExtrapolatedLocation(1)*Hero:GetTimeSinceLastSeen()*TimeForRocket + Hero:GetLastSeenLocation(), Hero:GetTimeSinceLastSeen()*5, 100, 200, 100 );
+			--DebugDrawCircle(Hero:GetLastSeenLocation(), Hero:GetTimeSinceLastSeen()*5, 100, 100, 100 );
+			--DebugDrawCircle(((Extrap*Hero:GetTimeSinceLastSeen()*TimeForRocket) + Hero:GetLastSeenLocation()), Hero:GetTimeSinceLastSeen()*3, 255, 100, 100 );
+		else
 			DebugDrawCircle(((Hero:GetExtrapolatedLocation(1))*TimeForRocket + Hero:GetLocation()), 50, 255, 255, 255 );
 		end
 	end

@@ -1,16 +1,17 @@
+if tableItemsToBuy == nil then
+
 tableItemsToBuy = {
-				"item_tango",
-				"item_tango",
-				"item_clarity",
-				"item_clarity",
-				"item_branches",
-				"item_branches",
+				"item_ring_of_protection",
+				"item_stout_shield",
 				"item_magic_stick",
 				"item_circlet",
+				"item_branches",
+				"item_branches",
 				"item_boots",
 				"item_energy_booster",
 				"item_staff_of_wizardry",
 				"item_ring_of_regen",
+				"item_sobi_mask",
 				"item_recipe_force_staff",
 				"item_point_booster",
 				"item_staff_of_wizardry",
@@ -25,6 +26,7 @@ tableItemsToBuy = {
 				"item_recipe_cyclone",
 				"item_cyclone",
 };
+end
 local r = {}
 function r.ItemPurchaseThink()
 
@@ -44,6 +46,7 @@ function r.ItemPurchaseThink()
 	then
 		npcBot:Action_PurchaseItem( sNextItem );
 		table.remove( tableItemsToBuy, 1 );
+		npcBot:Action_CourierDeliver()
 		return
 	end
 end

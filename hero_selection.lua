@@ -124,10 +124,10 @@ function Think()
 				SelectHero( num, "npc_dota_hero_rattletrap");
 			--[[elseif num == 6 then
 				SelectHero( num, "npc_dota_hero_rattletrap");]]
-			else
+			--else
 				--SelectHero( num, selection);
 				--SelectHero( num, "npc_dota_hero_rattletrap");
-				SelectHero( num, "npc_dota_hero_wisp");
+				--SelectHero( num, "npc_dota_hero_wisp");
 			end
 			table.remove(heroArray,selectionNum);
 			print ("selecting hero ", selection);
