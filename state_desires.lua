@@ -10,7 +10,7 @@ Arrived = false;
 OnTheMove = false;
 CHealth = npcBot:GetHealth()
 Ouch = 0;
-
+submode_lane = 0;
 local DistanceToLaneMarker = 0;
 local LaneAdvance = 0.15;
 local target = GetLocationAlongLane(AssLane,LaneAdvance);
@@ -30,7 +30,7 @@ RetreatMPThreshold = 0.2;
 
 STATE = STATE_IDLE;
 
-local function CheckHookClearance(EnemyToKill)
+function CheckHookClearance(EnemyToKill)
 	local npcBot = GetBot();
 	local AB = 0;
 	local AC = 0;
@@ -151,7 +151,6 @@ local function ConsiderRFCreeps(creeps)
 					castRFLocation = creep:GetLocation();
 					checkOtherCreeps = creep:GetNearbyCreeps(500,true);
 					lowCreeps = lowCreeps + 1;
-
 				 end
 			 end
 		end
@@ -166,56 +165,6 @@ local function ConsiderRFCreeps(creeps)
             return;
         end
 end
-
-local function ConsiderAttackCreeps(creeps)
-    -- there are creeps try to attack them --
-    local lowest_hp = 100000;
-    local weakest_creep = nil;
-    for creep_k,creep in pairs(creeps)
-    do
-		local creep_name = creep:GetUnitName();
-        local badpos = string.find( creep_name,"bad");
-        if(badpos ~= nil and creep:IsAlive()) then
-             local creep_hp = creep:GetHealth();
-             if(lowest_hp > creep_hp) then
-                 lowest_hp = creep_hp;
-                 weakest_creep = creep;
-             end
-         end
-    end
-
-    if(weakest_creep ~= nil) then
-
-		local rightClick = npcBot:GetEstimatedDamageToTarget( true, weakest_creep, 1.4, DAMAGE_TYPE_PHYSICAL );
-				if(Attacking_creep ~= weakest_creep and lowest_hp < (rightClick*2.5)) then
-					local weakest_creep_pos = weakest_creep:GetLocation();
-					npcBot:Action_MoveToLocation(weakest_creep_pos)
-				end
-        if(Attacking_creep ~= weakest_creep and lowest_hp < (rightClick)) then
-            Attacking_creep = weakest_creep;
-            npcBot:Action_AttackUnit(Attacking_creep,true);
-            --StateMachine.State = STATE_ATTACKING_CREEP;
-            return;
-        end
-        weakest_creep = nil;
-    end
-
-    -- nothing to do , try to attack heros
-		--[[
-    local NearbyEnemyHeroes = npcBot:GetNearbyHeroes( 1000, true, BOT_MODE_NONE );
-    if(NearbyEnemyHeroes ~= nil) then
-        for _,npcEnemy in pairs( NearbyEnemyHeroes )
-        do
-            if(npcBot:GetAttackTarget() ~= npcEnemy) then
-                npcBot:Action_AttackUnit(npcEnemy,false);
-                return;
-            end
-        end
-    end]]
-end
-
-
-
 
 function r.StateIdle(StateMachine)
     if(npcBot:IsAlive() == false) then
@@ -293,42 +242,95 @@ function r.StateLane(StateMachine)
       StateMachine.State = STATE_IDLE;
       return;
   end
+	if npcBot:GetHealth() < (npcBot:GetMaxHealth()*0.3) then
+		StateMachine.State = STATE_RETREAT;
+	end
   local Time = DotaTime()
   local creeps = npcBot:GetNearbyCreeps(500,true);
   local friend_creeps = npcBot:GetNearbyCreeps(500,false);
 	if npcBot:TimeSinceDamagedByAnyHero() < 1 then
-		Ouch = 1;
+		Ouch = Ouch + (CHealth - npcBot:GetHealth())/100;
 		TakenHeroDamage()
 	elseif CHealth > npcBot:GetHealth() then
-		Ouch = 0.5;
+		Ouch = Ouch + (CHealth - npcBot:GetHealth())/100
 		for k,v in pairs(friend_creeps) do
 				AggroDrop = v
-		end
-		npcBot:Action_AttackUnit(AggroDrop,true);
-		TakenCreepDamage()
-
-
+			end
+			npcBot:Action_AttackUnit(AggroDrop,true);
+			TakenCreepDamage()
 	end
 	CHealth = npcBot:GetHealth();
+
+	if 1==1 then
+		local NearbyEnemyHeroes = npcBot:GetNearbyHeroes( 1500, true, BOT_MODE_NONE );
+    if(NearbyEnemyHeroes ~= nil) then
+      for _,npcEnemy in pairs( NearbyEnemyHeroes )
+      do
+
+				local CanIBurst = npcBot:GetEstimatedDamageToTarget(true,npcEnemy,5, DAMAGE_TYPE_MAGICAL )
+
+				local CanIBurst = CanIBurst + npcBot:GetEstimatedDamageToTarget(true,npcEnemy,5, DAMAGE_TYPE_PHYSICAL )
+				local EnemyNearTower = #npcEnemy:GetNearbyTowers(1200,true)
+				print("CanIBurst? - ",CanIBurst)
+				if EnemyNearTower == 0 and CanIBurst > npcEnemy:GetHealth() and npcEnemy:CanBeSeen() == true then
+    			if(GetUnitToUnitDistance(npcBot,npcEnemy) < 600) then
+            EnemyToKill = npcEnemy;
+            ShouldFight = true;
+						StateMachine.State = STATE_FIGHTING;
+            break;
+					elseif GetUnitToUnitDistance(npcBot,npcEnemy) > 300 and abilityHook:IsFullyCastable() then
+            EnemyToKill = npcEnemy;
+            ShouldFight = true;
+						StateMachine.State = STATE_FIGHTING;
+            break;
+        	end
+				end
+      end
+    end
+	end
 	if Ouch < 0 then
+		---Creep laning
 		if Time < 0 then
+
+			if submode_lane ~= 1 then
+				print("Going To lane")
+			end
+			submode_lane = 1;
 			GetToLane()
 		elseif #friend_creeps < 2 and #creeps > 0 then
-			print("RetreatFromCreeps")
+			if submode_lane ~= 2 then
+				print("RetreatFromCreeps")
+			end
+			submode_lane = 2;
 			RetreatFromCreeps();
 		elseif #friend_creeps > 0 and #creeps > 0 then
-			print("ConsiderAttackCreeps")
-			ConsiderAttackCreeps(creeps);
+			if submode_lane ~= 3 then
+				print("ConsiderAttackCreeps")
+			end
+			submode_lane = 3;
+			ConsiderAttackCreeps(creeps,friend_creeps);
 	  elseif #friend_creeps > 0 and #creeps == 0 then
-			print("FollowCreepsIn")
+			if submode_lane ~= 4 then
+				print("FollowCreepsIn")
+			end
+			submode_lane = 4;
 	    FollowCreepsIn(friend_creeps)
 		elseif Time > 0 and  #friend_creeps == 0 and #creeps == 0 then
-			print("MoveUpLane")
+			if submode_lane ~= 5 then
+				print("MoveUpLane")
+			end
+			submode_lane = 5;
 			MoveUpLane();
 		else
-			print("I'M CONFUSED WHAT TO DO");
+
+			if submode_lane ~= 6 then
+				print("I'M CONFUSED WHAT TO DO");
+			end
+			submode_lane = 6;
 	  end
+		---
 	else
+		---ow that hurt
 		print("Ouch! - ",Ouch)
 		Ouch = Ouch - 0.05;
 	end
@@ -336,10 +338,8 @@ function r.StateLane(StateMachine)
 end
 ------lANING FUNCTIONS------
 function GetToLane()
-  print("I'M GOING TO LANE");
 
-
-	target = GetLocationAlongLane(AssLane,0.15)
+	target = GetLocationAlongLane(AssLane,0.1)
   npcBot:Action_MoveToLocation(target);
   return true;
 end
@@ -414,6 +414,55 @@ function GoTime()
 
 end
 
+function ConsiderAttackCreeps(creeps,fcreeps)
+    local lowest_hp = 1000;
+    local weakest_creep = nil;
+    for creep_k,creep in pairs(creeps) do
+        if(creep:IsAlive()) then
+             local creep_hp = creep:GetHealth();
+             if(lowest_hp > creep_hp) then
+                 lowest_hp = creep_hp;
+                 weakest_creep = creep;
+             end
+         end
+    end
+    if(weakest_creep ~= nil) then
+			local rightClick = npcBot:GetEstimatedDamageToTarget( true, weakest_creep, 1.4, DAMAGE_TYPE_PHYSICAL );
+			if lowest_hp > (rightClick*2.5) then
+				for k,fcreep in pairs(fcreeps) do
+			    if fcreeppos == nil then
+			        fcreeppos = fcreep:GetLocation();
+			    else
+			      fcreeppos = fcreeppos + fcreep:GetLocation();
+			    end
+			  end
+			  AveragePos = (fcreeppos / #fcreeps);
+				fcreeppos = nil;
+				npcBot:Action_MoveToLocation(AveragePos);
+			elseif lowest_hp < (rightClick*2.5) then
+					local weakest_creep_pos = weakest_creep:GetLocation();
+					npcBot:Action_MoveToLocation(weakest_creep_pos)
+				end
+        if lowest_hp < (rightClick) then
+            npcBot:Action_AttackUnit(weakest_creep,true);
+            return;
+        end
+        weakest_creep = nil;
+    end
+    -- nothing to do , try to attack heros
+		--[[
+    local NearbyEnemyHeroes = npcBot:GetNearbyHeroes( 1000, true, BOT_MODE_NONE );
+    if(NearbyEnemyHeroes ~= nil) then
+        for _,npcEnemy in pairs( NearbyEnemyHeroes )
+        do
+            if(npcBot:GetAttackTarget() ~= npcEnemy) then
+                npcBot:Action_AttackUnit(npcEnemy,false);
+                return;
+            end
+        end
+    end]]
+end
+
 ----------------------------
 function r.StateAttackingCreep(StateMachine)
     local npcBot = GetBot();
@@ -442,7 +491,7 @@ function r.StateAttackingCreep(StateMachine)
                 EnemyToKill = npcEnemy;
                 ShouldFight = true;
                 break;
-			elseif(GetUnitToUnitDistance(npcBot,npcEnemy) > 400 and abilityHook:GetCooldownTimeRemaining() == 0 ) then
+			elseif GetUnitToUnitDistance(npcBot,npcEnemy) > 300 and abilityHook:IsFullyCastable() then
                 EnemyToKill = npcEnemy;
                 ShouldFight = true;
                 break;
@@ -491,42 +540,6 @@ function r.StateRetreat(StateMachine)
         StateMachine.State = STATE_IDLE;
         return;
     end
-end
-
-
-function r.StateGotoComfortPoint(StateMachine)
-    local npcBot = GetBot();
-    if(npcBot:IsAlive() == false) then
-        StateMachine.State = STATE_IDLE;
-        return;
-    end
-
-    local creeps = npcBot:GetNearbyCreeps(800,true);
-	local friend_creeps = npcBot:GetNearbyCreeps(300,false);
-	local fcreeps = #friend_creeps;
-	local ecreeps = #creeps;
-    local pt = GetComfortPoint(creeps);
-
-    if(ShouldRetreat()) then
-        StateMachine.State = STATE_RETREAT;
-        return;
-    elseif(#creeps > 0 and pt ~= nil) then
-        local mypos = npcBot:GetLocation();
-
-        local d = GetUnitToLocationDistance(npcBot,pt);
-        if(d > 200 and ecreeps > 1 and fcreeps <2) then
-            --print("mypos "..mypos[1]..mypos[2]);
-            --print("comfort_pt "..pt[1]..pt[2]);
-            npcBot:Action_MoveToLocation(pt);
-        else
-            StateMachine.State = STATE_ATTACKING_CREEP;
-        end
-        return;
-    else
-        StateMachine.State = STATE_IDLE;
-        return;
-    end
-
 end
 
 function r.StateFighting(StateMachine)
@@ -585,6 +598,9 @@ function r.StateFighting(StateMachine)
 		    LastEnemyToBeAttacked = nil;
 			npcBot:Action_UseAbility( abilityBA );
 			return
+		elseif abilityBA:IsFullyCastable() == true and abilityCog:IsFullyCastable() == false then
+			LastEnemyToBeAttacked = nil;
+			npcBot:Action_UseAbility( abilityBA );
 		end
 
         if ( castRFDesire > 0 )
