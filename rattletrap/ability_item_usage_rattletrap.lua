@@ -30,6 +30,9 @@ end]]
 
 local function AbilityUsageThink()
 
+	print("HERE!")
+
+
 	local npcBot = GetBot();
 
 	local LocationMetaTable = getmetatable(npcBot:GetLocation());
@@ -40,7 +43,7 @@ local function AbilityUsageThink()
 	    print(k);
 	end
 	print("---------------------");
-    
+
 	--[[
 	Length2D
 	unm
@@ -70,7 +73,7 @@ local function AbilityUsageThink()
 	print(GetLocationAlongLane(2,10));
 	print("---------------------");
 
-	
+
 
 	-- Check if we're already using an ability
 	if ( npcBot:IsUsingAbility() ) then return end;
@@ -84,19 +87,19 @@ local function AbilityUsageThink()
 	castLSADesire, castLSALocation = ConsiderLightStrikeArray();
 	castDSDesire, castDSLocation = ConsiderDragonSlave();
 
-	if ( castLBDesire > castLSADesire and castLBDesire > castDSDesire ) 
+	if ( castLBDesire > castLSADesire and castLBDesire > castDSDesire )
 	then
 		npcBot:Action_UseAbilityOnEntity( abilityLB, castLBTarget );
 		return;
 	end
 
-	if ( castLSADesire > 0 ) 
+	if ( castLSADesire > 0 )
 	then
 		npcBot:Action_UseAbilityOnLocation( abilityLSA, castLSALocation );
 		return;
 	end
 
-	if ( castDSDesire > 0 ) 
+	if ( castDSDesire > 0 )
 	then
 		npcBot:Action_UseAbilityOnLocation( abilityDS, castDSLocation );
 		return;
@@ -108,7 +111,7 @@ local function AbilityUsageThink()
 
 
 	npcBot:Action_AttackMove(middle_point);
-	
+
 
 end
 
@@ -133,8 +136,8 @@ end
 function ConsiderLightStrikeArrayFighting(abilityLSA,enemy)
     local npcBot = GetBot();
 
-	if ( not abilityLSA:IsFullyCastable() ) 
-	then 
+	if ( not abilityLSA:IsFullyCastable() )
+	then
 		return BOT_ACTION_DESIRE_NONE, 0;
 	end;
 
@@ -142,7 +145,7 @@ function ConsiderLightStrikeArrayFighting(abilityLSA,enemy)
 
 	local d = GetUnitToLocationDistance(npcBot,enemy:GetLocation());
 
-	if (d < nCastRange and CanCastLightStrikeArrayOnTarget( enemy ) ) 
+	if (d < nCastRange and CanCastLightStrikeArrayOnTarget( enemy ) )
 	then
 		return BOT_ACTION_DESIRE_MODERATE, enemy:GetLocation();
 	end
@@ -155,8 +158,8 @@ function ConsiderLightStrikeArray(abilityLSA)
 	local npcBot = GetBot();
 
 	-- Make sure it's castable
-	if ( not abilityLSA:IsFullyCastable() ) 
-	then 
+	if ( not abilityLSA:IsFullyCastable() )
+	then
 		return BOT_ACTION_DESIRE_NONE, 0;
 	end;
 
@@ -174,7 +177,7 @@ function ConsiderLightStrikeArray(abilityLSA)
 	local tableNearbyEnemyHeroes = npcBot:GetNearbyHeroes( nCastRange + nRadius + 200, true, BOT_MODE_NONE );
 	for _,npcEnemy in pairs( tableNearbyEnemyHeroes )
 	do
-		if ( npcEnemy:IsChanneling() ) 
+		if ( npcEnemy:IsChanneling() )
 		then
 			return BOT_ACTION_DESIRE_HIGH, npcEnemy:GetLocation();
 		end
@@ -194,14 +197,14 @@ function ConsiderLightStrikeArray(abilityLSA)
 	end
 
 	-- If we're seriously retreating, see if we can land a stun on someone who's damaged us recently
-	if (true ) 
+	if (true )
 	then
 		local tableNearbyEnemyHeroes = npcBot:GetNearbyHeroes( nCastRange + nRadius + 200, true, BOT_MODE_NONE );
 		for _,npcEnemy in pairs( tableNearbyEnemyHeroes )
 		do
-			if ( npcBot:WasRecentlyDamagedByHero( npcEnemy, 2.0 ) ) 
+			if ( npcBot:WasRecentlyDamagedByHero( npcEnemy, 2.0 ) )
 			then
-				if ( CanCastLightStrikeArrayOnTarget( npcEnemy ) ) 
+				if ( CanCastLightStrikeArrayOnTarget( npcEnemy ) )
 				then
 					return BOT_ACTION_DESIRE_MODERATE, npcEnemy:GetLocation();
 				end
@@ -210,11 +213,11 @@ function ConsiderLightStrikeArray(abilityLSA)
 	end
 
 	-- If we're going after someone
-	if ( true) 
+	if ( true)
 	then
 		local npcTarget = npcBot:GetTarget();
 
-		if ( npcTarget ~= nil ) 
+		if ( npcTarget ~= nil )
 		then
 			if ( CanCastLightStrikeArrayOnTarget( npcTarget ) )
 			then
@@ -231,7 +234,7 @@ end
 function ConsiderDragonSlaveFighting(abilityDS,enemy)
     local npcBot = GetBot();
 
-    if ( not abilityDS:IsFullyCastable() ) then 
+    if ( not abilityDS:IsFullyCastable() ) then
 		return BOT_ACTION_DESIRE_NONE, 0;
 	end;
 
@@ -251,11 +254,11 @@ function ConsiderDragonSlave(abilityDS)
 	local npcBot = GetBot();
 
 
-    if ( not abilityDS:IsFullyCastable() ) then 
+    if ( not abilityDS:IsFullyCastable() ) then
 		return BOT_ACTION_DESIRE_NONE, 0;
 	end;
 
-	
+
 
 	-- Get some of its values
 	local nRadius = abilityDS:GetSpecialValueInt( "dragon_slave_width_end" );
@@ -278,22 +281,22 @@ function ConsiderDragonSlave(abilityDS)
 
 	-- If we're pushing or defending a lane and can hit 4+ creeps, go for it
 	-- wasting mana banned!
-	if (false) 
+	if (false)
 	then
 		local locationAoE = npcBot:FindAoELocation( true, false, npcBot:GetLocation(), nCastRange, nRadius, 0, 0 );
 
-		if ( locationAoE.count >= 5 ) 
+		if ( locationAoE.count >= 5 )
 		then
 			return BOT_ACTION_DESIRE_LOW, locationAoE.targetloc;
 		end
 	end
 
 	-- If we're going after someone
-	if (true) 
+	if (true)
 	then
 		local npcTarget = npcBot:GetTarget();
 
-		if ( npcTarget ~= nil ) 
+		if ( npcTarget ~= nil )
 		then
 			if ( CanCastDragonSlaveOnTarget( npcTarget ) )
 			then
@@ -307,7 +310,7 @@ function ConsiderDragonSlave(abilityDS)
         local locationAoE = npcBot:FindAoELocation( true, true, npcBot:GetLocation(), nCastRange, nRadius, 0, 0 );
 
 		-- hit heros
-		if ( locationAoE.count >= 1 ) 
+		if ( locationAoE.count >= 1 )
 		then
 			return BOT_ACTION_DESIRE_LOW, locationAoE.targetloc;
 		end
@@ -324,10 +327,10 @@ function ConsiderLagunaBlade(abilityLB)
 	local npcBot = GetBot();
 
 	-- Make sure it's castable
-	if ( not abilityLB:IsFullyCastable() ) then 
+	if ( not abilityLB:IsFullyCastable() ) then
 		return BOT_ACTION_DESIRE_NONE, 0;
 	end
-	
+
 
 	-- Get some of its values
 	local nCastRange = abilityLB:GetCastRange();
@@ -352,7 +355,7 @@ function ConsiderLagunaBlade(abilityLB)
     --[[
 	-- If we're in a teamfight, use it on the scariest enemy
 	local tableNearbyAttackingAlliedHeroes = npcBot:GetNearbyHeroes( 1000, false, BOT_MODE_ATTACK );
-	if ( #tableNearbyAttackingAlliedHeroes >= 2 ) 
+	if ( #tableNearbyAttackingAlliedHeroes >= 2 )
 	then
 		local npcMostDangerousEnemy = nil;
 		local nMostDangerousDamage = 0;

@@ -46,7 +46,7 @@ StateMachine[STATE_IDLE] = state_desires.StateIdle;
 StateMachine[STATE_LANE] = state_desires.StateLane;
 StateMachine[STATE_ATTACKING_CREEP] = state_desires.StateAttackingCreep;
 StateMachine[STATE_RETREAT] = state_desires.StateRetreat;
-StateMachine[STATE_GOTO_COMFORT_POINT] = state_desires.StateGotoComfortPoint;
+StateMachine[STATE_ROAMING] = state_desires.StateRoaming;
 StateMachine[STATE_FIGHTING] = state_desires.StateFighting;
 MyTeam = GetTeam();
 
@@ -69,9 +69,11 @@ totalLevelOfAbilities = 0;
 function TryToUpgradeAbility(AbilityName)
     local npcBot = GetBot();
     local ability = npcBot:GetAbilityByName(AbilityName);
+
     if ability:CanAbilityBeUpgraded() then
 		if totalLevelOfAbilities < npcBot:GetHeroLevel() then
-        ability:UpgradeAbility();
+				print("trying to upgrade: ",ability:GetName())
+        npcBot:Action_LevelAbility(ability:GetName());
 		totalLevelOfAbilities = totalLevelOfAbilities + 1;
 		print(npcBot:GetHeroLevel());
         return true;

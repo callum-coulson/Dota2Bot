@@ -22,7 +22,7 @@ STATE_ATTACKING_CREEP = "STATE_ATTACKING_CREEP";
 STATE_KILL = "STATE_KILL";
 STATE_RETREAT = "STATE_RETREAT";
 STATE_FARMING = "STATE_FARMING";
-STATE_GOTO_COMFORT_POINT = "STATE_GOTO_COMFORT_POINT";
+STATE_ROAMING = "STATE_ROAMING";
 STATE_FIGHTING = "STATE_FIGHTING";
 STATE_RUN_AWAY_FROM_TOWER = "STATE_RUN_AWAY_FROM_TOWER";
 RetreatHPThreshold = 0.3;
@@ -136,7 +136,7 @@ function r.StateIdle(StateMachine)
       return;
     end
 end
-
+------lANING FUNCTIONS------
 function r.StateLane(StateMachine)
 
 	local creeps = npcBot:GetNearbyCreeps(500,true);
@@ -211,7 +211,7 @@ function r.StateLane(StateMachine)
 	end
 
 end
-------lANING FUNCTIONS------
+------lANING SUBFUNCTIONS------
 function GetToLane()
 
 	target = GetLocationAlongLane(AssLane,0.1)
@@ -292,7 +292,7 @@ function Fighting(NearbyEnemyHeroes)
 		local CanIBurst = npcBot:GetEstimatedDamageToTarget(true,npcEnemy,5, DAMAGE_TYPE_MAGICAL )
 		local CanIBurst = CanIBurst + npcBot:GetEstimatedDamageToTarget(true,npcEnemy,5, DAMAGE_TYPE_PHYSICAL )
 		local EnemyNearTower = #npcEnemy:GetNearbyTowers(1200,true)
-		print("CanIBurst? - ",CanIBurst)
+		--print("CanIBurst? - ",CanIBurst)
 		if EnemyNearTower == 0 and CanIBurst > npcEnemy:GetHealth() and npcEnemy:CanBeSeen() == true then
 			if(GetUnitToUnitDistance(npcBot,npcEnemy) < 600) then
 				EnemyToKill = npcEnemy;
@@ -356,17 +356,12 @@ function r.StateRetreat(StateMachine)
         return;
     end
 
-    --[[
-            I don't know how to Create a object of Location so I borrow one from GetLocation()
-            Got Vector from marko.polo at http://dev.dota2.com/showthread.php?t=274301
-    ]]
 		if MyTeam == 2  then
     	home_pos = Vector(-7000,-7000);
 		elseif MyTeam == 3 then
 			home_pos = Vector(7000,7000);
 		end
     npcBot:Action_MoveToLocation(home_pos);
-
     if(npcBot:GetHealth() == npcBot:GetMaxHealth() and npcBot:GetMana() == npcBot:GetMaxMana()) then
         StateMachine.State = STATE_IDLE;
         return;
@@ -430,16 +425,17 @@ function r.StateFighting(StateMachine)
 			castRFDesire = 0;
             return;
         end
-
-
-
-        --print("desires: " .. castLBDesire .. " " .. castLSADesire .. " " .. castDSDesire);
-
         if(npcBot:GetAttackTarget() ~= EnemyToKill) then
             npcBot:Action_AttackUnit(EnemyToKill,false);
         end
 
     end
+end
+
+function r.StateRoaming(StateMachine)
+
+
+
 end
 
 -- useless now ignore it
